@@ -1,15 +1,16 @@
 import os
+
 import redis
-from sqlalchemy import text
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
-from app.models import AuditEvent, CaseCreate, CaseView, Metrics
-from app.service import CaseService
-from app.security import ApiKeyMiddleware
-from app.telemetry import configure_telemetry
 from app.database import get_engine
+from app.models import AuditEvent, CaseCreate, CaseView, Metrics
+from app.security import ApiKeyMiddleware
+from app.service import CaseService
 from app.store import store
+from app.telemetry import configure_telemetry
 
 app = FastAPI(
     title="Intelligent Automation Case Orchestrator",
@@ -28,21 +29,35 @@ def health() -> dict[str, str]:
 
 @app.get("/ready")
 def ready():
-    deps = {}
-    ok = True
+    dependencies = {}
+    healthy = True
+
     try:
-        with get_engine().connect() as conn: conn.execute(text("SELECT 1"))
-        deps["database"] = "ok"
-    except Exception:
-        deps["database"] = "unavailable"; ok = False
-    if os.getenv("DISPATCH_BACKEND","database").lower() == "redis":
+        with get_engine().connect() as conn:
+            conn.execute(text("SELECT 1"))
+        dependencies["database"] = "ok"
+    except Exception:  # noqa: BLE001 - readiness must degrade safely for any dependency failure
+        dependencies["database"] = "unavailable"
+        healthy = False
+
+    if os.getenv("DISPATCH_BACKEND", "database").lower() == "redis":
         try:
-            redis.Redis.from_url(os.getenv("REDIS_URL","redis://localhost:6379/0"), socket_connect_timeout=1).ping()
-            deps["redis"] = "ok"
-        except Exception:
-            deps["redis"] = "unavailable"; ok = False
-    payload={"status":"ready" if ok else "not_ready","dependencies":deps}
-    return payload if ok else JSONResponse(status_code=503, content=payload)
+            redis.Redis.from_url(
+                os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+                socket_connect_timeout=1,
+            ).ping()
+            dependencies["redis"] = "ok"
+        except Exception:  # noqa: BLE001 - readiness must degrade safely for any dependency failure
+            dependencies["redis"] = "unavailable"
+            healthy = False
+
+    payload = {
+        "status": "ready" if healthy else "not_ready",
+        "dependencies": dependencies,
+    }
+    if healthy:
+        return payload
+    return JSONResponse(status_code=503, content=payload)
 
 
 @app.post("/cases", response_model=CaseView, status_code=status.HTTP_201_CREATED)
