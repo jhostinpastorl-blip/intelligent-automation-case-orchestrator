@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: intelligent_automation
+      POSTGRES_USER: automation
+      POSTGRES_PASSWORD: automation
+  redis:
+    image: redis:7-alpine
+  api:
+    build: .
+    environment:
+      CASE_DATABASE_URL: postgresql+psycopg://automation:automation@postgres:5432/intelligent_automation
+      DISPATCH_BACKEND: redis
+      REDIS_URL: redis://redis:6379/0
+    ports: ["8001:8000"]
+    depends_on: [postgres, redis]
+  worker:
+    build: .
+    command: python -m app.worker
+    environment:
+      CASE_DATABASE_URL: postgresql+psycopg://automation:automation@postgres:5432/intelligent_automation
+      DISPATCH_BACKEND: redis
+      REDIS_URL: redis://redis:6379/0
+    depends_on: [postgres, redis]
