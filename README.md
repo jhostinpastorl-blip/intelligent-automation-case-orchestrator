@@ -1,5 +1,7 @@
 # Intelligent Automation Case Orchestrator v1.0
 
+[![CI](https://github.com/jhostinpastorl-blip/intelligent-automation-case-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/jhostinpastorl-blip/intelligent-automation-case-orchestrator/actions/workflows/ci.yml)
+
 Reference project for **guarded Intelligent Automation** in document-driven enterprise workflows.
 
 The core principle is:
@@ -86,7 +88,7 @@ LLM_OUTPUT_COST_PER_MILLION=...
 The provider is constrained to `submit_structured_case`; that function only returns typed data.
 
 ## Integration with Enterprise Automation Orchestrator
-After approval, the controlled tool layer may submit an automation request to the first portfolio project. That project owns retries, API/RPA routing and downstream execution reliability.
+After approval, the controlled tool layer may submit an automation request to [Enterprise Automation Orchestrator](https://github.com/jhostinpastorl-blip/enterprise-automation-orchestrator). That project owns retries, API/RPA routing and downstream execution reliability.
 
 ## Security scope
 Current reference controls include API-key protection, tool allow-list, state validation, schema validation and human approval. Production would still require OAuth/OIDC, RBAC, managed secrets, private networking, PII controls, approval identity, retention policy and security scanning.
